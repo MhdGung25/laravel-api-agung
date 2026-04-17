@@ -1,7 +1,6 @@
-# Gunakan image PHP 8.3 Apache yang lebih stabil
 FROM php:8.3-apache
 
-# 1. Install dependencies sistem & ekstensi PHP
+# 1. Install dependencies sistem
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
@@ -13,28 +12,31 @@ RUN apt-get update && apt-get install -y \
     libzip-dev && \
     docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# 2. Konfigurasi Apache (Hanya aktifkan yang perlu)
+# 2. FIX MPM ERROR: Matikan modul mpm_event dan aktifkan mpm_prefork secara manual
+RUN a2dismod mpm_event && a2enmod mpm_prefork
+
+# 3. Aktifkan Apache Rewrite
 RUN a2enmod rewrite
 
-# 3. Install Composer
+# 4. Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# 4. Set working directory
+# 5. Set working directory & Copy Project
 WORKDIR /var/www/html
 COPY . .
 
-# 5. Install library Laravel
+# 6. Install library Laravel
 RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
 
-# 6. Set permission folder storage & cache
+# 7. Set permission folder (Sangat Penting)
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
-# 7. Setting Document Root ke folder PUBLIC (Versi Simpel)
+# 8. Set Apache Document Root ke folder PUBLIC
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# 8. Tambahkan ServerName untuk menghindari warning Apache
+# 9. Tambahkan ServerName untuk menghindari warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 EXPOSE 80
