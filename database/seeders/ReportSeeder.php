@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Report; // Tambahkan import ini agar tidak error "not found"
+use App\Models\Report; 
 use App\Models\User;
 
 class ReportSeeder extends Seeder
